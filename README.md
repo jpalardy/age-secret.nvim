@@ -43,12 +43,6 @@ require('age_secret').setup({
 
 - Open a `.age` file - it will be automatically decrypted.
 - Save a `.age` file - it will be automatically encrypted.
-- Change AGE recipient or identity dynamically:
-
-```vim
-:SetAgeRecipient age1...
-:SetAgeIdentity ~/age-key.txt
-```
 
 ## Requirements
 
