@@ -2,8 +2,8 @@ local M = {}
 
 -- Fetch configuration from environment variables
 local config = {
-  recipient = vim.fn.getenv("AGE_RECIPIENT") or "age1fht3gvntpeffl65jjhdlremkl8nqe2p0ml3e2zwf0n6jd7g7lsese4hscr",
-  identity = vim.fn.getenv("AGE_IDENTITY") or "~/age-key.txt",
+  recipient = vim.fn.getenv("AGE_RECIPIENT"),
+  identity = vim.fn.getenv("AGE_IDENTITY"),
 }
 
 function M.setup(user_config)
