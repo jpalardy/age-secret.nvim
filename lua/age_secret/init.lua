@@ -4,11 +4,13 @@ function M.setup(user_config)
   local config = {
     recipient = vim.fn.getenv("AGE_RECIPIENT"),
     identity = vim.fn.getenv("AGE_IDENTITY"),
+    executable = "age",
   }
 
   if user_config ~= nil then
     config.recipient = user_config.recipient or config.recipient
     config.identity = user_config.identity or config.identity
+    config.executable = user_config.executable or config.executable
   end
 
   vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
@@ -43,7 +45,7 @@ function M.setup(user_config)
         error("Identity file not found. Please set the AGE_IDENTITY environment variable.")
       end
 
-      vim.cmd(string.format("silent '[,']!rage --decrypt -i %s", config.identity))
+      vim.cmd(string.format("silent '[,']!%s --decrypt -i %s", config.executable, config.identity))
       vim.bo.binary = false
 
       local filename = vim.fn.expand("%:r")
@@ -59,7 +61,7 @@ function M.setup(user_config)
       end
 
       vim.bo.binary = true
-      vim.cmd(string.format("silent '[,']!rage --encrypt -r %s -a", config.recipient))
+      vim.cmd(string.format("silent '[,']!%s --encrypt -r %s -a", config.executable, config.recipient))
     end,
   })
 

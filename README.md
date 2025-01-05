@@ -36,6 +36,7 @@ settings within Neovim:
 require('age_secret').setup({
   recipient = "age1...",      -- Replace with your AGE recipient
   identity = "~/age-key.txt", -- Replace with your AGE identity
+  executable = "rage",        -- Replace with your AGE executable (default: age)
 })
 ```
 
