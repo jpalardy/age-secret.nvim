@@ -1,16 +1,17 @@
 local M = {}
 
 function M.setup(user_config)
-  local config = {
-    recipient = vim.fn.getenv("AGE_RECIPIENT"),
+  local defaults = {
     identity = vim.fn.getenv("AGE_IDENTITY"),
+    recipient = vim.fn.getenv("AGE_RECIPIENT"),
     executable = "age",
   }
+  local config = vim.tbl_extend("keep", user_config, defaults)
 
-  if user_config ~= nil then
-    config.recipient = user_config.recipient or config.recipient
-    config.identity = user_config.identity or config.identity
-    config.executable = user_config.executable or config.executable
+  -- identity isn't optional (to open the file)
+  -- but we don't need a recipient, if we're not going to write the file
+  if config.identity == vim.NIL then
+    error("No identity: set the identity option or the AGE_IDENTITY environment variable")
   end
 
   vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
@@ -25,7 +26,7 @@ function M.setup(user_config)
     callback = function()
       vim.o.backup = false
       vim.o.writebackup = false
-      vim.opt.shada = ""
+      vim.o.shada = ""
     end,
   })
 
@@ -41,16 +42,11 @@ function M.setup(user_config)
   vim.api.nvim_create_autocmd({ "BufReadPost", "FileReadPost" }, {
     pattern = "*.age",
     callback = function()
-      if config.identity == vim.NIL then
-        error("Identity file not found. Please set the AGE_IDENTITY environment variable.")
-      end
-
       vim.cmd(string.format("silent '[,']!%s --decrypt -i %s", config.executable, config.identity))
       if vim.v.shell_error ~= 0 then
         vim.cmd("silent undo")
         return vim.notify("decryption failed", vim.log.levels.ERROR)
       end
-
       vim.bo.binary = false
     end,
   })
@@ -59,7 +55,7 @@ function M.setup(user_config)
     pattern = "*.age",
     callback = function()
       if config.recipient == vim.NIL then
-        error("Recipient not specified. Please set the AGE_RECIPIENT environment variable.")
+        error("No recipient: set the recipient option or the AGE_RECIPIENT environment variable")
       end
 
       vim.cmd(
@@ -74,7 +70,6 @@ function M.setup(user_config)
         vim.api.nvim_err_writeln("encryption failed")
         return
       end
-
       vim.api.nvim_buf_set_option(0, "modified", false)
     end,
   })
