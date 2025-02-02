@@ -1,14 +1,17 @@
 local M = {}
 
 function M.setup(user_config)
-  local config = {
-    recipient = vim.fn.getenv("AGE_RECIPIENT"),
+  local defaults = {
     identity = vim.fn.getenv("AGE_IDENTITY"),
+    recipient = vim.fn.getenv("AGE_RECIPIENT"),
+    executable = "age",
   }
+  local config = vim.tbl_extend("keep", user_config, defaults)
 
-  if user_config ~= nil then
-    config.recipient = user_config.recipient or config.recipient
-    config.identity = user_config.identity or config.identity
+  -- identity isn't optional (to open the file)
+  -- but we don't need a recipient, if we're not going to write the file
+  if config.identity == vim.NIL then
+    error("No identity: set the identity option or the AGE_IDENTITY environment variable")
   end
 
   vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
@@ -23,7 +26,7 @@ function M.setup(user_config)
     callback = function()
       vim.o.backup = false
       vim.o.writebackup = false
-      vim.opt.shada = ""
+      vim.o.shada = ""
     end,
   })
 
@@ -39,36 +42,35 @@ function M.setup(user_config)
   vim.api.nvim_create_autocmd({ "BufReadPost", "FileReadPost" }, {
     pattern = "*.age",
     callback = function()
-      if config.identity == vim.NIL then
-        error("Identity file not found. Please set the AGE_IDENTITY environment variable.")
+      vim.cmd(string.format("silent '[,']!%s --decrypt -i %s", config.executable, config.identity))
+      if vim.v.shell_error ~= 0 then
+        vim.cmd("silent undo")
+        return vim.notify("decryption failed", vim.log.levels.ERROR)
       end
-
-      vim.cmd(string.format("silent '[,']!rage --decrypt -i %s", config.identity))
       vim.bo.binary = false
-
-      local filename = vim.fn.expand("%:r")
-      vim.cmd(string.format("doautocmd BufReadPost %s", filename))
     end,
   })
 
-  vim.api.nvim_create_autocmd({ "BufWritePre", "FileWritePre" }, {
+  vim.api.nvim_create_autocmd({ "BufWriteCmd", "FileWriteCmd" }, {
     pattern = "*.age",
     callback = function()
       if config.recipient == vim.NIL then
-        error("Recipient not specified. Please set the AGE_RECIPIENT environment variable.")
+        error("No recipient: set the recipient option or the AGE_RECIPIENT environment variable")
       end
 
-      vim.bo.binary = true
-      vim.cmd(string.format("silent '[,']!rage --encrypt -r %s -a", config.recipient))
-    end,
-  })
-
-  vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
-    pattern = "*.age",
-    callback = function()
-      -- undo the last change (which is the encryption)
-      vim.cmd("silent undo")
-      vim.bo.binary = false
+      vim.cmd(
+        string.format(
+          "silent '[,']w !%s --encrypt -r %s -a -o %s",
+          config.executable,
+          config.recipient,
+          vim.fn.expand("%")
+        )
+      )
+      if vim.v.shell_error ~= 0 then
+        vim.api.nvim_err_writeln("encryption failed")
+        return
+      end
+      vim.api.nvim_buf_set_option(0, "modified", false)
     end,
   })
 end
