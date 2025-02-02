@@ -46,31 +46,36 @@ function M.setup(user_config)
       end
 
       vim.cmd(string.format("silent '[,']!%s --decrypt -i %s", config.executable, config.identity))
-      vim.bo.binary = false
+      if vim.v.shell_error ~= 0 then
+        vim.cmd("silent undo")
+        return vim.notify("decryption failed", vim.log.levels.ERROR)
+      end
 
-      local filename = vim.fn.expand("%:r")
-      vim.cmd(string.format("doautocmd BufReadPost %s", filename))
+      vim.bo.binary = false
     end,
   })
 
-  vim.api.nvim_create_autocmd({ "BufWritePre", "FileWritePre" }, {
+  vim.api.nvim_create_autocmd({ "BufWriteCmd", "FileWriteCmd" }, {
     pattern = "*.age",
     callback = function()
       if config.recipient == vim.NIL then
         error("Recipient not specified. Please set the AGE_RECIPIENT environment variable.")
       end
 
-      vim.bo.binary = true
-      vim.cmd(string.format("silent '[,']!%s --encrypt -r %s -a", config.executable, config.recipient))
-    end,
-  })
+      vim.cmd(
+        string.format(
+          "silent '[,']w !%s --encrypt -r %s -a -o %s",
+          config.executable,
+          config.recipient,
+          vim.fn.expand("%")
+        )
+      )
+      if vim.v.shell_error ~= 0 then
+        vim.api.nvim_err_writeln("encryption failed")
+        return
+      end
 
-  vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
-    pattern = "*.age",
-    callback = function()
-      -- undo the last change (which is the encryption)
-      vim.cmd("silent undo")
-      vim.bo.binary = false
+      vim.api.nvim_buf_set_option(0, "modified", false)
     end,
   })
 end
