@@ -47,6 +47,7 @@ require('age_secret').setup({
 
 ## Requirements
 
+[age](https://github.com/FiloSottile/age) and/or
 [rage](https://github.com/str4d/rage) installed and configured on your system.
 
 ## Contributing
