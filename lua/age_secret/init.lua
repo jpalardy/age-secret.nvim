@@ -40,36 +40,36 @@ function M.setup(user_config)
         vim.api.nvim_err_writeln("No identity: set the identity option or the AGE_IDENTITY environment variable")
         return
       end
-      vim.cmd(string.format("silent '[,']!%s --decrypt -i %s", config.executable, config.identity))
+
+      local template = "%s --decrypt --identity %s"
+      vim.cmd("silent '[,']!" .. string.format(template, config.executable, config.identity))
       if vim.v.shell_error ~= 0 then
+        vim.api.nvim_err_writeln("decryption failed")
         vim.cmd("silent undo")
-        return vim.notify("decryption failed", vim.log.levels.ERROR)
+        vim.bo.modifiable = false
+        return
       end
+
       vim.bo.binary = false
     end,
   })
 
   vim.api.nvim_create_autocmd({ "BufWriteCmd", "FileWriteCmd" }, {
     pattern = "*.age",
-    callback = function()
+    callback = function(ctx)
       if config.recipient == vim.NIL then
         vim.api.nvim_err_writeln("No recipient: set the recipient option or the AGE_RECIPIENT environment variable")
         return
       end
 
-      vim.cmd(
-        string.format(
-          "silent '[,']w !%s --encrypt -r %s -a -o %s",
-          config.executable,
-          config.recipient,
-          vim.fn.expand("%")
-        )
-      )
+      local template = "%s --encrypt --recipient %s --armor --output %s"
+      vim.cmd("silent '[,']w !" .. string.format(template, config.executable, config.recipient, ctx.file))
       if vim.v.shell_error ~= 0 then
         vim.api.nvim_err_writeln("encryption failed")
         return
       end
-      vim.api.nvim_buf_set_option(0, "modified", false)
+
+      vim.bo.modified = false
     end,
   })
 end
