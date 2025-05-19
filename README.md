@@ -1,5 +1,7 @@
 # Neovim AGE Plugin
 
+_(Originally forked from [histrio/age-secret.nvim](https://github.com/histrio/age-secret.nvim), but now disconnected due to major changes that I don't expect to send upstream.)_
+
 ## Description
 
 This Neovim plugin provides seamless integration for handling AGE encrypted
