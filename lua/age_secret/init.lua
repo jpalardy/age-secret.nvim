@@ -50,6 +50,7 @@ function M.setup(user_config)
         return
       end
 
+      vim.bo.filetype = vim.fn.expand("%:t:r:e") .. ".age"
       vim.bo.binary = false
     end,
   })
